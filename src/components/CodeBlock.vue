@@ -105,8 +105,10 @@ watchEffect(() => {
 })
 
 // Toggle code block visibility
-function toggleCodeBlock(index: number) {
-  showCodeBlocks.value[index] = !showCodeBlocks.value[index]
+function toggleCodeBlock(index: number | undefined) {
+  if (index !== undefined) {
+    showCodeBlocks.value[index] = !showCodeBlocks.value[index]
+  }
 }
 
 // Toggle thinking visibility
@@ -115,7 +117,9 @@ function toggleThinking() {
 }
 
 // Copy code to clipboard
-function copyToClipboard(text: string, index: number) {
+function copyToClipboard(text: string, index: number | undefined) {
+  if (index === undefined) return
+
   navigator.clipboard
     .writeText(text)
     .then(() => {
@@ -170,7 +174,7 @@ function renderMarkdown(text: string) {
                     stroke="currentColor"
                   >
                     <path
-                      v-if="showCodeBlocks[part.index]"
+                      v-if="part.index !== undefined && showCodeBlocks[part.index]"
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
@@ -184,7 +188,8 @@ function renderMarkdown(text: string) {
                       d="M9 5l7 7-7 7"
                     />
                   </svg>
-                  {{ showCodeBlocks[part.index] ? 'Hide' : 'Show' }} Code Block
+                  {{ part.index !== undefined && showCodeBlocks[part.index] ? 'Hide' : 'Show' }}
+                  Code Block
                 </button>
 
                 <span
@@ -198,10 +203,14 @@ function renderMarkdown(text: string) {
               <button
                 @click="copyToClipboard(part.content, part.index)"
                 class="text-sm font-medium hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
-                :class="copySuccess[part.index] ? 'text-green-600' : 'text-blue-700'"
+                :class="
+                  part.index !== undefined && copySuccess[part.index]
+                    ? 'text-green-600'
+                    : 'text-blue-700'
+                "
               >
                 <svg
-                  v-if="copySuccess[part.index]"
+                  v-if="part.index !== undefined && copySuccess[part.index]"
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-4 w-4"
                   viewBox="0 0 20 20"
@@ -228,12 +237,12 @@ function renderMarkdown(text: string) {
                     d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
                   />
                 </svg>
-                {{ copySuccess[part.index] ? 'Copied!' : 'Copy' }}
+                {{ part.index !== undefined && copySuccess[part.index] ? 'Copied!' : 'Copy' }}
               </button>
             </div>
 
             <div
-              v-if="showCodeBlocks[part.index]"
+              v-if="part.index !== undefined && showCodeBlocks[part.index]"
               class="bg-gray-900 text-yellow-300 p-4 overflow-x-auto font-mono text-sm"
             >
               {{ part.content }}
@@ -284,7 +293,13 @@ function renderMarkdown(text: string) {
               >
                 <div class="flex items-center">
                   <button
-                    @click="toggleCodeBlock(formattedAnswer.blockCount + part.index)"
+                    @click="
+                      toggleCodeBlock(
+                        part.index !== undefined
+                          ? formattedAnswer.blockCount + part.index
+                          : undefined,
+                      )
+                    "
                     class="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline flex items-center"
                   >
                     <svg
@@ -295,7 +310,10 @@ function renderMarkdown(text: string) {
                       stroke="currentColor"
                     >
                       <path
-                        v-if="showCodeBlocks[formattedAnswer.blockCount + part.index]"
+                        v-if="
+                          part.index !== undefined &&
+                          showCodeBlocks[formattedAnswer.blockCount + part.index]
+                        "
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
@@ -310,7 +328,10 @@ function renderMarkdown(text: string) {
                       />
                     </svg>
                     {{
-                      showCodeBlocks[formattedAnswer.blockCount + part.index] ? 'Hide' : 'Show'
+                      part.index !== undefined &&
+                      showCodeBlocks[formattedAnswer.blockCount + part.index]
+                        ? 'Hide'
+                        : 'Show'
                     }}
                     Code Block
                   </button>
@@ -324,16 +345,26 @@ function renderMarkdown(text: string) {
                 </div>
 
                 <button
-                  @click="copyToClipboard(part.content, formattedAnswer.blockCount + part.index)"
+                  @click="
+                    copyToClipboard(
+                      part.content,
+                      part.index !== undefined
+                        ? formattedAnswer.blockCount + part.index
+                        : undefined,
+                    )
+                  "
                   class="text-sm font-medium hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
                   :class="
-                    copySuccess[formattedAnswer.blockCount + part.index]
+                    part.index !== undefined && copySuccess[formattedAnswer.blockCount + part.index]
                       ? 'text-green-600'
                       : 'text-blue-700'
                   "
                 >
                   <svg
-                    v-if="copySuccess[formattedAnswer.blockCount + part.index]"
+                    v-if="
+                      part.index !== undefined &&
+                      copySuccess[formattedAnswer.blockCount + part.index]
+                    "
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-4 w-4"
                     viewBox="0 0 20 20"
@@ -360,12 +391,19 @@ function renderMarkdown(text: string) {
                       d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
                     />
                   </svg>
-                  {{ copySuccess[formattedAnswer.blockCount + part.index] ? 'Copied!' : 'Copy' }}
+                  {{
+                    part.index !== undefined && copySuccess[formattedAnswer.blockCount + part.index]
+                      ? 'Copied!'
+                      : 'Copy'
+                  }}
                 </button>
               </div>
 
               <div
-                v-if="showCodeBlocks[formattedAnswer.blockCount + part.index]"
+                v-if="
+                  part.index !== undefined &&
+                  showCodeBlocks[formattedAnswer.blockCount + part.index]
+                "
                 class="bg-gray-900 text-yellow-300 p-4 overflow-x-auto font-mono text-sm"
               >
                 {{ part.content }}
@@ -399,7 +437,7 @@ function renderMarkdown(text: string) {
                 stroke="currentColor"
               >
                 <path
-                  v-if="showCodeBlocks[part.index]"
+                  v-if="part.index !== undefined && showCodeBlocks[part.index]"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
@@ -413,7 +451,8 @@ function renderMarkdown(text: string) {
                   d="M9 5l7 7-7 7"
                 />
               </svg>
-              {{ showCodeBlocks[part.index] ? 'Hide' : 'Show' }} Code Block
+              {{ part.index !== undefined && showCodeBlocks[part.index] ? 'Hide' : 'Show' }} Code
+              Block
             </button>
 
             <span
@@ -427,10 +466,14 @@ function renderMarkdown(text: string) {
           <button
             @click="copyToClipboard(part.content, part.index)"
             class="text-sm font-medium hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
-            :class="copySuccess[part.index] ? 'text-green-600' : 'text-blue-700'"
+            :class="
+              part.index !== undefined && copySuccess[part.index]
+                ? 'text-green-600'
+                : 'text-blue-700'
+            "
           >
             <svg
-              v-if="copySuccess[part.index]"
+              v-if="part.index !== undefined && copySuccess[part.index]"
               xmlns="http://www.w3.org/2000/svg"
               class="h-4 w-4"
               viewBox="0 0 20 20"
@@ -457,12 +500,12 @@ function renderMarkdown(text: string) {
                 d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
               />
             </svg>
-            {{ copySuccess[part.index] ? 'Copied!' : 'Copy' }}
+            {{ part.index !== undefined && copySuccess[part.index] ? 'Copied!' : 'Copy' }}
           </button>
         </div>
 
         <div
-          v-if="showCodeBlocks[part.index]"
+          v-if="part.index !== undefined && showCodeBlocks[part.index]"
           class="bg-gray-900 text-yellow-300 p-4 overflow-x-auto font-mono text-sm"
         >
           {{ part.content }}
