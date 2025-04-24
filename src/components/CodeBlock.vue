@@ -140,79 +140,63 @@ function renderMarkdown(text: string) {
 </script>
 
 <template>
-  <div class="whitespace-pre-wrap">
+  <div class="code-wrapper">
     <!-- Thinking & Answer accordion for claude-3.7-sonnet-thinking model -->
-    <div v-if="hasThinkingSection" class="mb-4">
-      <!-- Answer section (always visible) -->
-      <div class="mb-2">
-        <template v-for="(part, index) in formattedAnswer.result" :key="'answer-' + index">
+    <div v-if="hasThinkingSection" class="thinking-section">
+      <div class="thinking-toggle" @click="toggleThinking">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="thinking-icon"
+          :class="{ 'rotate-180': showThinking }"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <span>{{ showThinking ? 'Hide' : 'Show' }} Thinking Process</span>
+      </div>
+
+      <div v-if="showThinking" class="thinking-content">
+        <template v-for="(part, index) in formattedThinking.result" :key="'thinking-' + index">
           <!-- Markdown text -->
           <div
             v-if="part.type === 'markdown'"
-            class="mb-2"
+            class="thinking-text"
             v-html="renderMarkdown(part.content)"
           ></div>
 
           <!-- Code block -->
-          <div
-            v-else
-            class="my-4 rounded-lg border border-blue-200 overflow-hidden bg-white shadow-sm"
-          >
-            <div
-              class="flex justify-between items-center bg-gradient-to-r from-blue-50 to-blue-100 px-3 py-2 border-b border-blue-200"
-            >
-              <div class="flex items-center">
-                <button
-                  @click="toggleCodeBlock(part.index)"
-                  class="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline flex items-center"
-                >
+          <div v-else class="code-block-container">
+            <div class="code-header">
+              <div class="code-header-left">
+                <button @click="toggleCodeBlock(part.index)" class="code-toggle">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                    class="toggle-icon"
+                    :class="{ 'rotate-90': part.index !== undefined && showCodeBlocks[part.index] }"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
                   >
                     <path
-                      v-if="part.index !== undefined && showCodeBlocks[part.index]"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                    <path
-                      v-else
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 5l7 7-7 7"
+                      fill-rule="evenodd"
+                      d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                      clip-rule="evenodd"
                     />
                   </svg>
                   {{ part.index !== undefined && showCodeBlocks[part.index] ? 'Hide' : 'Show' }}
-                  Code Block
+                  Code
                 </button>
-
-                <span
-                  v-if="part.language"
-                  class="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded-md"
-                >
-                  {{ part.language }}
-                </span>
+                <span v-if="part.language" class="language-tag">{{ part.language }}</span>
               </div>
-
-              <button
-                @click="copyToClipboard(part.content, part.index)"
-                class="text-sm font-medium hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
-                :class="
-                  part.index !== undefined && copySuccess[part.index]
-                    ? 'text-green-600'
-                    : 'text-blue-700'
-                "
-              >
+              <button @click="copyToClipboard(part.content, part.index)" class="copy-button">
                 <svg
                   v-if="part.index !== undefined && copySuccess[part.index]"
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4"
+                  class="check-icon"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -225,381 +209,354 @@ function renderMarkdown(text: string) {
                 <svg
                   v-else
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  class="copy-icon"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
+                  <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
                   <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                    d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"
                   />
                 </svg>
                 {{ part.index !== undefined && copySuccess[part.index] ? 'Copied!' : 'Copy' }}
               </button>
             </div>
-
-            <div
+            <pre
               v-if="part.index !== undefined && showCodeBlocks[part.index]"
-              class="bg-gray-900 text-yellow-300 p-4 overflow-x-auto font-mono text-sm"
-            >
-              {{ part.content }}
-            </div>
+              class="code-content"
+            ><code>{{ part.content }}</code></pre>
           </div>
         </template>
       </div>
-
-      <!-- Thinking accordion -->
-      <div class="border border-gray-200 rounded-lg mt-4">
-        <button
-          @click="toggleThinking"
-          class="w-full px-4 py-3 text-left flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors duration-200 rounded-lg"
-        >
-          <span class="font-medium text-gray-700">Thinking Process</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 text-gray-500 transition-transform duration-200"
-            :class="showThinking ? 'rotate-180' : ''"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-        <div v-if="showThinking" class="p-4 bg-gray-50 rounded-b-lg">
-          <template v-for="(part, index) in formattedThinking.result" :key="'thinking-' + index">
-            <!-- Markdown text -->
-            <div
-              v-if="part.type === 'markdown'"
-              class="mb-2"
-              v-html="renderMarkdown(part.content)"
-            ></div>
-
-            <!-- Code block -->
-            <div
-              v-else
-              class="my-4 rounded-lg border border-blue-200 overflow-hidden bg-white shadow-sm"
-            >
-              <div
-                class="flex justify-between items-center bg-gradient-to-r from-blue-50 to-blue-100 px-3 py-2 border-b border-blue-200"
-              >
-                <div class="flex items-center">
-                  <button
-                    @click="
-                      toggleCodeBlock(
-                        part.index !== undefined
-                          ? formattedAnswer.blockCount + part.index
-                          : undefined,
-                      )
-                    "
-                    class="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline flex items-center"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        v-if="
-                          part.index !== undefined &&
-                          showCodeBlocks[formattedAnswer.blockCount + part.index]
-                        "
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 9l-7 7-7-7"
-                      />
-                      <path
-                        v-else
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                    {{
-                      part.index !== undefined &&
-                      showCodeBlocks[formattedAnswer.blockCount + part.index]
-                        ? 'Hide'
-                        : 'Show'
-                    }}
-                    Code Block
-                  </button>
-
-                  <span
-                    v-if="part.language"
-                    class="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded-md"
-                  >
-                    {{ part.language }}
-                  </span>
-                </div>
-
-                <button
-                  @click="
-                    copyToClipboard(
-                      part.content,
-                      part.index !== undefined
-                        ? formattedAnswer.blockCount + part.index
-                        : undefined,
-                    )
-                  "
-                  class="text-sm font-medium hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
-                  :class="
-                    part.index !== undefined && copySuccess[formattedAnswer.blockCount + part.index]
-                      ? 'text-green-600'
-                      : 'text-blue-700'
-                  "
-                >
-                  <svg
-                    v-if="
-                      part.index !== undefined &&
-                      copySuccess[formattedAnswer.blockCount + part.index]
-                    "
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                  <svg
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                    />
-                  </svg>
-                  {{
-                    part.index !== undefined && copySuccess[formattedAnswer.blockCount + part.index]
-                      ? 'Copied!'
-                      : 'Copy'
-                  }}
-                </button>
-              </div>
-
-              <div
-                v-if="
-                  part.index !== undefined &&
-                  showCodeBlocks[formattedAnswer.blockCount + part.index]
-                "
-                class="bg-gray-900 text-yellow-300 p-4 overflow-x-auto font-mono text-sm"
-              >
-                {{ part.content }}
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
     </div>
 
-    <!-- Regular content (no thinking section) -->
-    <template v-else v-for="(part, index) in formattedAnswer.result" :key="index">
-      <!-- Markdown text -->
-      <div v-if="part.type === 'markdown'" class="mb-2" v-html="renderMarkdown(part.content)"></div>
-
-      <!-- Code block -->
-      <div v-else class="my-4 rounded-lg border border-blue-200 overflow-hidden bg-white shadow-sm">
+    <!-- Answer section (always visible) -->
+    <div class="answer-section">
+      <template v-for="(part, index) in formattedAnswer.result" :key="'answer-' + index">
+        <!-- Markdown text -->
         <div
-          class="flex justify-between items-center bg-gradient-to-r from-blue-50 to-blue-100 px-3 py-2 border-b border-blue-200"
-        >
-          <div class="flex items-center">
-            <button
-              @click="toggleCodeBlock(part.index)"
-              class="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline flex items-center"
-            >
+          v-if="part.type === 'markdown'"
+          class="markdown-content"
+          v-html="renderMarkdown(part.content)"
+        ></div>
+
+        <!-- Code block -->
+        <div v-else class="code-block-container">
+          <div class="code-header">
+            <div class="code-header-left">
+              <button @click="toggleCodeBlock(part.index)" class="code-toggle">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="toggle-icon"
+                  :class="{ 'rotate-90': part.index !== undefined && showCodeBlocks[part.index] }"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                {{ part.index !== undefined && showCodeBlocks[part.index] ? 'Hide' : 'Show' }} Code
+              </button>
+              <span v-if="part.language" class="language-tag">{{ part.language }}</span>
+            </div>
+            <button @click="copyToClipboard(part.content, part.index)" class="copy-button">
               <svg
+                v-if="part.index !== undefined && copySuccess[part.index]"
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                class="check-icon"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
                 <path
-                  v-if="part.index !== undefined && showCodeBlocks[part.index]"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-                <path
-                  v-else
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
                 />
               </svg>
-              {{ part.index !== undefined && showCodeBlocks[part.index] ? 'Hide' : 'Show' }} Code
-              Block
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="copy-icon"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
+                <path
+                  d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"
+                />
+              </svg>
+              {{ part.index !== undefined && copySuccess[part.index] ? 'Copied!' : 'Copy' }}
             </button>
-
-            <span
-              v-if="part.language"
-              class="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded-md"
-            >
-              {{ part.language }}
-            </span>
           </div>
-
-          <button
-            @click="copyToClipboard(part.content, part.index)"
-            class="text-sm font-medium hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
-            :class="
-              part.index !== undefined && copySuccess[part.index]
-                ? 'text-green-600'
-                : 'text-blue-700'
-            "
-          >
-            <svg
-              v-if="part.index !== undefined && copySuccess[part.index]"
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            <svg
-              v-else
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-              />
-            </svg>
-            {{ part.index !== undefined && copySuccess[part.index] ? 'Copied!' : 'Copy' }}
-          </button>
+          <pre
+            v-if="part.index !== undefined && showCodeBlocks[part.index]"
+            class="code-content"
+          ><code>{{ part.content }}</code></pre>
         </div>
-
-        <div
-          v-if="part.index !== undefined && showCodeBlocks[part.index]"
-          class="bg-gray-900 text-yellow-300 p-4 overflow-x-auto font-mono text-sm"
-        >
-          {{ part.content }}
-        </div>
-      </div>
-    </template>
+      </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
-:deep(a) {
-  color: #3b82f6;
+.code-wrapper {
+  color: rgb(51, 65, 85);
+  width: 100%;
+  display: block;
+  background-color: transparent;
+}
+
+.thinking-section {
+  margin-bottom: 1rem;
+  border: 1px solid rgb(226, 232, 240);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  width: 100%;
+  display: block;
+}
+
+.thinking-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: rgb(248, 250, 252);
+  color: rgb(71, 85, 105);
+  font-weight: 500;
+  cursor: pointer;
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.thinking-toggle:hover {
+  background-color: rgb(241, 245, 249);
+}
+
+.thinking-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: rgb(100, 116, 139);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.thinking-icon.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.thinking-content {
+  padding: 1rem;
+  background-color: white;
+  border-top: 1px solid rgb(226, 232, 240);
+  display: block;
+  width: 100%;
+}
+
+.thinking-text {
+  margin-bottom: 0.75rem;
+  display: block;
+  width: 100%;
+}
+
+.code-block-container {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(226, 232, 240);
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  width: 100%;
+  display: block;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgb(248, 250, 252);
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(226, 232, 240);
+  width: 100%;
+}
+
+.code-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.code-toggle {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(37, 99, 235);
+  display: flex;
+  align-items: center;
+}
+
+.code-toggle:hover {
+  color: rgb(29, 78, 216);
+}
+
+.toggle-icon {
+  height: 1rem;
+  width: 1rem;
+  margin-right: 0.25rem;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.toggle-icon.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.language-tag {
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  background-color: rgb(219, 234, 254);
+  color: rgb(29, 78, 216);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  border-radius: 0.375rem;
+}
+
+.copy-button {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgb(71, 85, 105);
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  border-radius: 0.25rem;
+  transition-property: background-color, color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.copy-button:hover {
+  color: rgb(15, 23, 42);
+  background-color: rgb(241, 245, 249);
+}
+
+.copy-icon,
+.check-icon {
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.check-icon {
+  color: rgb(34, 197, 94);
+}
+
+.code-content {
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgb(30, 41, 59);
+  background-color: rgb(248, 250, 252);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  display: block;
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+.markdown-content {
+  margin-bottom: 0.75rem;
+  width: 100%;
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.markdown-content :deep(a) {
+  color: rgb(37, 99, 235);
+}
+
+.markdown-content :deep(a:hover) {
   text-decoration: underline;
 }
 
-:deep(h1) {
+.markdown-content :deep(h1) {
   font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.markdown-content :deep(h2) {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.markdown-content :deep(h3) {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
   font-weight: 600;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
+  display: block;
 }
 
-:deep(h2) {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-top: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-:deep(h3) {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-top: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-:deep(ul),
-:deep(ol) {
-  padding-left: 1.5rem;
-  margin: 0.5rem 0;
-}
-
-:deep(ul) {
+.markdown-content :deep(ul) {
   list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: block;
 }
 
-:deep(ol) {
+.markdown-content :deep(ol) {
   list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: block;
 }
 
-:deep(li) {
-  margin: 0.25rem 0;
-}
-
-:deep(p) {
-  margin: 0.5rem 0;
-}
-
-:deep(blockquote) {
-  border-left: 4px solid #e5e7eb;
+.markdown-content :deep(blockquote) {
   padding-left: 1rem;
-  margin: 0.5rem 0;
-  color: #4b5563;
+  border-left-width: 4px;
+  border-color: rgb(226, 232, 240);
+  font-style: italic;
+  color: rgb(71, 85, 105);
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: block;
 }
 
-:deep(hr) {
-  border: 0;
-  border-top: 1px solid #e5e7eb;
-  margin: 1rem 0;
+.markdown-content :deep(p) {
+  margin-bottom: 0.75rem;
+  display: block;
 }
 
-:deep(code:not(pre code)) {
-  background-color: #f3f4f6;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  font-family: monospace;
-  font-size: 0.875em;
-}
-
-:deep(table) {
+.answer-section {
+  color: rgb(51, 65, 85);
   width: 100%;
-  border-collapse: collapse;
-  margin: 0.5rem 0;
-}
-
-:deep(th),
-:deep(td) {
-  border: 1px solid #e5e7eb;
-  padding: 0.5rem;
-  text-align: left;
-}
-
-:deep(th) {
-  background-color: #f9fafb;
-  font-weight: 600;
+  display: block;
 }
 </style>

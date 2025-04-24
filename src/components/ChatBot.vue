@@ -90,12 +90,12 @@ async function sendMessage() {
 </script>
 
 <template>
-  <div class="w-full h-screen flex flex-col p-0 m-0 overflow-hidden">
-    <div class="flex justify-center py-4 bg-white border-b">
-      <h1 class="text-3xl font-bold text-blue-600 flex items-center">
+  <div class="chat-container">
+    <div class="header">
+      <h1 class="title">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-8 w-8 mr-2"
+          class="icon"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -111,25 +111,21 @@ async function sendMessage() {
       </h1>
     </div>
 
-    <div v-if="!sessionActive" class="flex-1 flex items-center justify-center p-4">
-      <div class="bg-white rounded-lg shadow-lg p-6 border border-gray-200 w-full max-w-xl">
-        <h2 class="text-xl font-semibold mb-4 text-gray-800">Select a model to start chatting</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div v-if="!sessionActive" class="welcome-container">
+      <div class="model-selector">
+        <h2 class="subtitle">Select a model to start chatting</h2>
+        <div class="model-grid">
           <button
             v-for="model in models"
             :key="model.id"
             @click="selectedModel = model.id"
-            class="p-4 border rounded-md transition-all duration-200 flex items-center"
-            :class="
-              selectedModel === model.id
-                ? 'bg-blue-100 border-blue-500 text-blue-700 shadow-sm'
-                : 'hover:bg-gray-50 border-gray-200'
-            "
+            class="model-button"
+            :class="{ selected: selectedModel === model.id }"
           >
             <svg
               v-if="selectedModel === model.id"
               xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 mr-2 text-blue-500"
+              class="check-icon"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -145,21 +141,20 @@ async function sendMessage() {
         <button
           @click="startSession"
           :disabled="!selectedModel"
-          class="w-full py-3 bg-blue-600 text-white rounded-md font-medium transition-colors duration-200 disabled:bg-gray-300 hover:bg-blue-700"
+          class="start-button"
+          :class="{ disabled: !selectedModel }"
         >
           Start Chat Session
         </button>
       </div>
     </div>
 
-    <div v-else class="flex-1 flex flex-col h-full overflow-hidden">
-      <div
-        class="flex justify-between items-center px-4 py-2 bg-white shadow-sm border-b border-gray-200 z-10"
-      >
-        <div class="text-sm font-medium flex items-center relative">
+    <div v-else class="chat-session">
+      <div class="model-header">
+        <div class="model-info">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 mr-1 text-blue-500"
+            class="info-icon"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -170,14 +165,11 @@ async function sendMessage() {
             />
           </svg>
           Using model:
-          <button
-            @click="toggleModelDropdown"
-            class="text-blue-600 ml-1 flex items-center gap-1 hover:underline focus:outline-none"
-          >
+          <button @click="toggleModelDropdown" class="model-selector-button">
             {{ models.find((m) => m.id === selectedModel)?.name || selectedModel }}
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="dropdown-icon"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -193,10 +185,7 @@ async function sendMessage() {
           </button>
 
           <!-- Dropdown menu -->
-          <div
-            v-if="showModelDropdown"
-            class="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 w-64"
-          >
+          <div v-if="showModelDropdown" class="model-dropdown">
             <ul>
               <li
                 v-for="model in models"
@@ -208,7 +197,7 @@ async function sendMessage() {
                 <svg
                   v-if="model.id === selectedModel"
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 mr-2 text-blue-600"
+                  class="dropdown-check-icon"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -225,13 +214,14 @@ async function sendMessage() {
           </div>
         </div>
 
-        <button
-          @click="endSession"
-          class="px-4 py-1.5 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 transition-colors duration-200 flex items-center"
-        >
+        <button @click="endSession" class="end-button">End Session</button>
+      </div>
+
+      <div class="messages-container">
+        <div v-if="messages.length === 0" class="empty-state">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4 mr-1"
+            class="empty-icon"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -240,136 +230,129 @@ async function sendMessage() {
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-          End Session
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
-        <div
-          v-if="messages.length === 0"
-          class="flex flex-col items-center justify-center h-full text-gray-500 py-4"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-12 w-12 mb-2 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
             />
           </svg>
-          <p>Type a message to start the conversation</p>
+          <p class="empty-text">Start the conversation by sending a message</p>
         </div>
 
-        <div v-for="(message, index) in messages" :key="index" class="mb-4">
+        <div v-else class="messages-list">
           <div
-            class="flex items-start gap-2"
-            :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+            v-for="(message, index) in messages"
+            :key="index"
+            class="message"
+            :class="message.role"
           >
-            <div
-              v-if="message.role === 'assistant'"
-              class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-blue-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
+            <div class="message-content">
+              <div v-if="message.role === 'user'" class="avatar user-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path
+                    fill-rule="evenodd"
+                    d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div v-else class="avatar assistant-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.5 7.5h-9v9h9v-9z" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M8.25 2.25A.75.75 0 019 3v.75h2.25V3a.75.75 0 011.5 0v.75H15V3a.75.75 0 011.5 0v.75h.75a3 3 0 013 3v.75H21A.75.75 0 0121 9h-.75v2.25H21a.75.75 0 010 1.5h-.75V15H21a.75.75 0 010 1.5h-.75v.75a3 3 0 01-3 3h-.75V21a.75.75 0 01-1.5 0v-.75h-2.25V21a.75.75 0 01-1.5 0v-.75H9V21a.75.75 0 01-1.5 0v-.75h-.75a3 3 0 01-3-3v-.75H3A.75.75 0 013 15h.75v-2.25H3a.75.75 0 010-1.5h.75V9H3a.75.75 0 010-1.5h.75v-.75a3 3 0 013-3h.75V3a.75.75 0 01.75-.75zM6 6.75A.75.75 0 016.75 6h10.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V6.75z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div class="message-body">
+                <div class="message-header">
+                  <span class="role-label">{{
+                    message.role === 'user' ? 'You' : 'Assistant'
+                  }}</span>
+                </div>
+                <div v-if="message.role === 'assistant'" class="assistant-content">
+                  <CodeBlock :content="message.content" :is-thinking-model="isThinkingModel" />
+                </div>
+                <div v-else class="whitespace-pre-wrap">{{ message.content }}</div>
+              </div>
             </div>
+          </div>
 
-            <div
-              class="rounded-lg p-3 max-w-[85%] shadow-sm"
-              :class="
-                message.role === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-800 border border-gray-200'
-              "
-            >
-              <CodeBlock
-                v-if="message.role === 'assistant'"
-                :content="message.content"
-                :is-thinking-model="isThinkingModel"
-              />
-              <div v-else class="whitespace-pre-wrap">{{ message.content }}</div>
-            </div>
-
-            <div
-              v-if="message.role === 'user'"
-              class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
+          <!-- Loading indicator bubble -->
+          <div v-if="isLoading" class="message assistant">
+            <div class="message-content">
+              <div class="avatar assistant-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.5 7.5h-9v9h9v-9z" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M8.25 2.25A.75.75 0 019 3v.75h2.25V3a.75.75 0 011.5 0v.75H15V3a.75.75 0 011.5 0v.75h.75a3 3 0 013 3v.75H21A.75.75 0 0121 9h-.75v2.25H21a.75.75 0 010 1.5h-.75V15H21a.75.75 0 010 1.5h-.75v.75a3 3 0 01-3 3h-.75V21a.75.75 0 01-1.5 0v-.75h-2.25V21a.75.75 0 01-1.5 0v-.75H9V21a.75.75 0 01-1.5 0v-.75h-.75a3 3 0 01-3-3v-.75H3A.75.75 0 013 15h.75v-2.25H3a.75.75 0 010-1.5h.75V9H3a.75.75 0 010-1.5h.75v-.75a3 3 0 013-3h.75V3a.75.75 0 01.75-.75zM6 6.75A.75.75 0 016.75 6h10.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V6.75z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div class="message-body">
+                <div class="message-header">
+                  <span class="role-label">Assistant</span>
+                </div>
+                <div class="assistant-content loading-content">
+                  <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
-        <div
-          v-if="isLoading"
-          class="flex items-center gap-2 text-blue-500 p-3 bg-blue-50 rounded-lg mb-4"
-        >
-          <div class="loading-spinner"></div>
-          <span>Thinking...</span>
-        </div>
       </div>
 
-      <div class="p-4 bg-white border-t border-gray-200">
-        <div class="relative">
+      <div class="input-container">
+        <div class="input-wrapper">
           <textarea
             v-model="inputMessage"
-            @keydown.ctrl.enter="sendMessage"
-            placeholder="Type your message here... (Ctrl+Enter to send)"
-            class="w-full p-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows="3"
+            @keydown.enter.prevent="sendMessage"
+            placeholder="Type your message..."
+            class="message-input"
+            :disabled="isLoading"
           ></textarea>
           <button
             @click="sendMessage"
-            class="absolute right-3 bottom-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center"
-            :disabled="isLoading || !inputMessage.trim()"
+            class="send-button"
+            :disabled="!inputMessage.trim() || isLoading"
           >
             <svg
+              v-if="isLoading"
+              class="animate-spin loading-icon"
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
               fill="none"
               viewBox="0 0 24 24"
-              stroke="currentColor"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="send-icon"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"
               />
             </svg>
-            Send
           </button>
         </div>
       </div>
@@ -378,19 +361,491 @@ async function sendMessage() {
 </template>
 
 <style scoped>
-.loading-spinner {
-  display: inline-block;
-  width: 1rem;
+.chat-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  background-color: white;
+  border-bottom: 1px solid rgb(226, 232, 240);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.title {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  color: rgb(59, 130, 246);
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  height: 2rem;
+  width: 2rem;
+  margin-right: 0.5rem;
+}
+
+.welcome-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.model-selector {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  padding: 2rem;
+  border: 1px solid rgb(226, 232, 240);
+  width: 100%;
+  max-width: 36rem;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: rgb(30, 41, 59);
+}
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .model-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.model-button {
+  padding: 1rem;
+  border: 1px solid rgb(226, 232, 240);
+  border-radius: 0.5rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  display: flex;
+  align-items: center;
+}
+
+.model-button:hover {
+  background-color: rgb(248, 250, 252);
+}
+
+.model-button.selected {
+  background-color: rgb(239, 246, 255);
+  border-color: rgb(59, 130, 246);
+  color: rgb(29, 78, 216);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.check-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: 0.5rem;
+  color: rgb(59, 130, 246);
+}
+
+.start-button {
+  width: 100%;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background-color: rgb(59, 130, 246);
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.start-button:hover {
+  background-color: rgb(37, 99, 235);
+}
+
+.start-button.disabled {
+  background-color: rgb(203, 213, 225);
+  cursor: not-allowed;
+}
+
+.start-button.disabled:hover {
+  background-color: rgb(203, 213, 225);
+}
+
+.chat-session {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.model-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background-color: white;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border-bottom: 1px solid rgb(226, 232, 240);
+  z-index: 10;
+}
+
+.model-info {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.info-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: 0.25rem;
+  color: rgb(59, 130, 246);
+}
+
+.model-selector-button {
+  color: rgb(59, 130, 246);
+  margin-left: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.model-selector-button:hover {
+  color: rgb(37, 99, 235);
+}
+
+.model-selector-button:focus {
+  outline: none;
+}
+
+.dropdown-icon {
   height: 1rem;
-  border: 2px solid rgba(59, 130, 246, 0.3);
+  width: 1rem;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.dropdown-icon.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.model-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background-color: white;
+  border: 1px solid rgb(226, 232, 240);
+  border-radius: 0.375rem;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  z-index: 20;
+  width: 16rem;
+}
+
+.end-button {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background-color: rgb(241, 245, 249);
+  color: rgb(51, 65, 85);
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.end-button:hover {
+  background-color: rgb(226, 232, 240);
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  background-color: rgb(248, 250, 252);
+}
+
+@media (min-width: 768px) {
+  .messages-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgb(148, 163, 184);
+}
+
+.empty-icon {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-text {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.message {
+  position: relative;
+}
+
+.message.user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message.assistant {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message-content {
+  display: flex;
+  max-width: 80%;
+  width: 100%;
+}
+
+.avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.user-avatar {
+  background-color: rgb(219, 234, 254);
+  color: rgb(37, 99, 235);
+  order: 9999;
+  margin-left: 0.5rem;
+}
+
+.assistant-avatar {
+  background-color: rgb(241, 245, 249);
+  color: rgb(71, 85, 105);
+  margin-right: 0.5rem;
+}
+
+.message-body {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  width: 100%;
+  min-width: 300px;
+  overflow: visible;
+}
+
+.message.user .message-body {
+  background-color: rgb(59, 130, 246);
+  color: white;
+  border-top-right-radius: 0;
+}
+
+.message.assistant .message-body {
+  background-color: white;
+  color: rgb(51, 65, 85);
+  border-top-left-radius: 0;
+  min-width: 300px;
+  border: 1px solid rgb(226, 232, 240);
+}
+
+.assistant-content {
+  width: 100%;
+  min-width: 300px;
+  display: block;
+  overflow: visible;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.role-label {
+  font-weight: 500;
+}
+
+.input-container {
+  padding: 1rem;
+  background-color: white;
+  border-top: 1px solid rgb(226, 232, 240);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.message-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  padding-right: 3rem;
+  background-color: rgb(248, 250, 252);
+  border: 1px solid rgb(203, 213, 225);
+  border-radius: 0.5rem;
+  resize: none;
+  min-height: 58px;
+  max-height: 200px;
+  color: rgb(51, 65, 85);
+}
+
+.message-input::placeholder {
+  color: rgb(148, 163, 184);
+}
+
+.message-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(59, 130, 246);
+  border-color: transparent;
+}
+
+.loading-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 36px;
+}
+
+.loading-dots {
+  display: flex;
+  align-items: center;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  margin: 0 3px;
+  background-color: #64748b;
   border-radius: 50%;
-  border-top-color: rgba(59, 130, 246, 1);
-  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.send-button {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  border-radius: 9999px;
+  padding: 0.5rem;
+  color: rgb(59, 130, 246);
+}
+
+.send-button:hover {
+  background-color: rgb(239, 246, 255);
+}
+
+.send-button:disabled {
+  color: rgb(148, 163, 184);
+}
+
+.send-button:disabled:hover {
+  background-color: transparent;
+  cursor: not-allowed;
+}
+
+.loading-icon,
+.send-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
   to {
     transform: rotate(360deg);
   }
+}
+
+.dropdown-check-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+  color: rgb(37, 99, 235);
 }
 </style>
