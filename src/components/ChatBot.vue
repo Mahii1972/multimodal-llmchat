@@ -311,7 +311,14 @@ async function sendMessage() {
         <div class="input-wrapper">
           <textarea
             v-model="inputMessage"
-            @keydown.enter.prevent="sendMessage"
+            @keydown.enter="
+              (event) => {
+                if (!event.shiftKey) {
+                  event.preventDefault()
+                  sendMessage()
+                }
+              }
+            "
             placeholder="Type your message..."
             class="message-input"
             :disabled="isLoading"
